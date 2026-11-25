@@ -133,8 +133,8 @@ vercel.json               # Vercel routing + function config
 
    ```bash
    vercel env pull .env.production.local
-   # ensure POSTGRES_URL in that file is loaded, then:
-   node -r dotenv/config src/db/seed.js dotenv_config_path=.env.production.local
+   # Load the pulled production variables, then seed the database:
+   node -e "require('dotenv').config({ path: '.env.production.local' }); require('./src/db/seed.js')"
    ```
 
    Alternatively, skip seeding and just use `/register` to create your first Admin account (requires `ADMIN_SIGNUP_CODE` to be set).
@@ -144,7 +144,7 @@ vercel.json               # Vercel routing + function config
 ### Notes on the serverless setup
 
 - **Sessions** are stored entirely in a signed cookie (`cookie-session`), not server memory — this is required because serverless functions don't share memory between invocations.
-- **Views** (`src/views/**`) are explicitly bundled into the function via `vercel.json`'s `includeFiles`, since Vercel's build-time file tracer can't detect EJS's dynamic `fs.readFileSync` calls on its own.
+- **Runtime source files** (`src/**`), including EJS templates and the SQL schema, are explicitly bundled into the function via `vercel.json`'s `includeFiles`. These files are loaded dynamically at runtime and may not be detected by Vercel's build-time file tracer.
 - **Database schema** is created automatically (idempotent `CREATE TABLE IF NOT EXISTS`) the first time the function queries the database after a cold start — no separate migration step needed for schema changes defined in `src/db/schema.sql`.
 
 ## Scripts reference
